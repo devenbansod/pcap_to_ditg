@@ -60,6 +60,16 @@ def getDstPortFromKey(key):
     dstPair = (key.split("-"))[1]
     return (dstPair.split(":"))[1]
 
+def getDstPort():
+    global p
+
+    if p == 12752:
+        p = 12346
+    else:
+        p += 1
+
+    return p
+
 def addToTCPFlow(TCPFlows, key, timestamp):
     if key in TCPFlows.keys():
         l = TCPFlows[key]
@@ -131,18 +141,17 @@ def writeUDPFlowsToFile(write_key, IpMapDict = None):
             # TODO : generate a file with IDTs instead
             timestamps = sorted(UDPFlows[key])
             sport = getSrcPortFromKey(key)
-            dport = getDstPortFromKey(key)
             dIP   = getDstIPAddrFromKey(key, True, IpMapDict)
 
             if dIP == '' or getSrcIPAddrFromKey(key, True, IpMapDict) == '':
                 continue
 
             for time in timestamps:
+                dport = getDstPort()
                 s = '-z 1 -d ' + str((time - first_time) * 1000) + \
-                    ' -sp ' + sport + \
-                    ' -rp ' + dport   + \
+                    ' -rp ' + str(dport)   + \
                     ' -a '  + dIP + \
-                    ' -n 800 200 ' + \
+                    ' -c 800 ' + \
                     ' -T UDP' + '\n'
                 f.write(s)
                 written = True
@@ -169,18 +178,17 @@ def writeTCPFlowsToFile(write_key, IpMapDict = None):
             # TODO : generate a file with IDTs instead
             timestamps = sorted(TCPFlows[key])
             sport = getSrcPortFromKey(key)
-            dport = getDstPortFromKey(key)
             dIP   = getDstIPAddrFromKey(key, True, IpMapDict)
 
             if dIP == '' or getSrcIPAddrFromKey(key, True, IpMapDict) == '':
                 continue
 
             for time in timestamps:
+                dport = getDstPort()
                 s = '-z 1 -d ' + str((time - first_time) * 1000) + \
-                    ' -sp ' + sport + \
-                    ' -rp ' + dport   + \
+                    ' -rp ' + str(dport)   + \
                     ' -a '  + dIP + \
-                    ' -n 800 200 ' + \
+                    ' -c 800' + \
                     ' -T TCP' + '\n'
                 f.write(s)
                 written = True
@@ -269,6 +277,8 @@ def openAndReadPcap(filename, end_time):
 
 first_time = 0
 end_time = 30
+
+p = 12346
 
 # IpMapDict = generateMapper('list.csv', 'mapper.csv')
 
