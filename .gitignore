@@ -87,3 +87,13 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# DITG related files
+.ditg
+
+# IDTs related files
+.idts
+
+# PCAP related files
+.pcap
+.anon
