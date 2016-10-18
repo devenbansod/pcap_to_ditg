@@ -6,6 +6,7 @@ import socket
 import linecache
 import os
 
+# Get Human-readable MAC addr
 def mac_addr(address):
     """Convert a MAC address to a readable/printable string
 
@@ -16,6 +17,7 @@ def mac_addr(address):
     """
     return ':'.join('%02x' % ord(b) for b in address)
 
+# Get Human-readable IP addr
 def inet_to_str(inet):
     """Convert inet object to a string
 
@@ -30,37 +32,30 @@ def inet_to_str(inet):
     except ValueError:
         return socket.inet_ntop(socket.AF_INET6, inet)
 
-def getKey(src_ip, src_port, dst_ip, dst_port):
-    return src_ip + ":" + str(src_port) + "-" + dst_ip + ":" + str(dst_port)
+
+def getKey(src_ip, dst_ip):
+    return src_ip + "_" + dst_ip
 
 def getSrcIPAddrFromKey(key, mapped = False, IpMapDict = None):
     if mapped == False:
-        return (key.split(":"))[0]
+        return (key.split("_"))[0]
     elif IpMapDict != None:
-        if key.split(':')[0] in IpMapDict.keys():
-            return IpMapDict[key.split(':')[0]]
+        if key.split('_')[0] in IpMapDict.keys():
+            return IpMapDict[key.split('_')[0]]
 
     return ''
 
 def getDstIPAddrFromKey(key, mapped = False, IpMapDict = None):
-    dstPair = (key.split("-"))[1]
     if mapped == False:
-        return (dstPair.split(":"))[0]
+        return (key.split("_"))[1]
     elif IpMapDict != None:
-        if (dstPair.split(":"))[0] in IpMapDict.keys():
-            return IpMapDict[(dstPair.split(":"))[0]]
+        if key.split('_')[1] in IpMapDict.keys():
+            return IpMapDict[key.split('_')[1]]
 
     return ''
 
-def getSrcPortFromKey(key):
-    srcPair = (key.split("-"))[0]
-    return (srcPair.split(":"))[1]
-
-def getDstPortFromKey(key):
-    dstPair = (key.split("-"))[1]
-    return (dstPair.split(":"))[1]
-
 def getDstPort():
+    # Generates an un-reserved Port number
     global p
 
     if p == 12752:
@@ -70,23 +65,14 @@ def getDstPort():
 
     return p
 
-def addToTCPFlow(TCPFlows, key, timestamp):
-    if key in TCPFlows.keys():
-        l = TCPFlows[key]
+def addToFlows(Flows, key, timestamp, type='TCP'):
+    if key in Flows.keys():
+        l = Flows[key]
     else:
         l = []
 
     l.append(timestamp)
-    TCPFlows[key] = l
-
-def addToUDPFlow(UDPFlows, key, timestamp):
-    if key in UDPFlows.keys():
-        l = UDPFlows[key]
-    else:
-        l = []
-
-    l.append(timestamp)
-    UDPFlows[key] = l
+    Flows[key] = l
 
 def getIpForHost(host):
     if host == 'h1':
@@ -102,100 +88,61 @@ def getIpForHost(host):
     elif host == 'h6':
         return '10.0.5.2'
 
-def generateDITGFlowFiles(TCPFlows, UDPFlows, IpMapDict):
-    srcProcessedUDP = []
-    srcProcessedTCP = []
+def getAllDistinctIPs(Flows):
+    ipsProcessed = []
+    for key in Flows.keys():
+        origSIP = getSrcIPAddrFromKey(key)
+        if origSIP not in ipsProcessed:
+            ipsProcessed.append(origSIP)
 
-    for key in UDPFlows.keys():
-        src_ip = getSrcIPAddrFromKey(key)
-        if src_ip in srcProcessedUDP:
-            continue
+        origDIP = getDstIPAddrFromKey(key)
+        if origDIP not in ipsProcessed:
+            ipsProcessed.append(origDIP)
 
-        srcProcessedUDP.append(src_ip)
-        writeUDPFlowsToFile(key, IpMapDict)
+    return ipsProcessed
 
-    for key in TCPFlows.keys():
-        src_ip = getSrcIPAddrFromKey(key)
-        if src_ip in srcProcessedTCP:
-            continue
-
-        srcProcessedTCP.append(src_ip)
-        writeTCPFlowsToFile(key, IpMapDict)
+def generateDITGFlowFiles(Flows, IpMapDict):
+    i = 0
+    for key in Flows.keys():
+        i += 1
+        print i
+        writeFlowToFile(key, Flows, IpMapDict)
 
 
-def writeUDPFlowsToFile(write_key, IpMapDict = None):
-    filename = getSrcIPAddrFromKey(write_key, True, IpMapDict) + "_UDP.ditg"
-    written = False
-    opened = False
+def writeFlowToFile(key, Flows, IpMapDict = None):
+    origSIP = getSrcIPAddrFromKey(key)
+    origDIP = getDstIPAddrFromKey(key)
+    newSIP  = getSrcIPAddrFromKey(key, True, IpMapDict)
+    newDIP  = getDstIPAddrFromKey(key, True, IpMapDict)
 
-    if os.path.isfile(filename):
-        f = open(filename, 'a')
+    if newDIP == '' or newSIP == '':
+        print "R"
+        return
+
+    scriptFileName = newSIP + '.ditg'
+    if os.path.exists(scriptFileName):
+        f = open(scriptFileName, 'a')
     else:
-        f = open(filename, 'w')
-        opened = True
+        f = open(scriptFileName, 'w')
 
-    global first_time
+    idtsFileName = origSIP + '_' + origDIP + '.idts'
+    idtsFile = open(idtsFileName, 'w')
 
-    for key in UDPFlows.keys():
-        if getSrcIPAddrFromKey(key) == getSrcIPAddrFromKey(write_key):
-            # TODO : generate a file with IDTs instead
-            timestamps = sorted(UDPFlows[key])
-            sport = getSrcPortFromKey(key)
-            dIP   = getDstIPAddrFromKey(key, True, IpMapDict)
+    idts = Flows[key]
+    for idt in idts:
+        idtsFile.write(str(idt))
+    idtsFile.close()
 
-            if dIP == '' or getSrcIPAddrFromKey(key, True, IpMapDict) == '':
-                continue
+    f.write(
+        '-z ' + str(len(idts)) + \
+        ' -a ' + newDIP + \
+        ' -rp '+ str(getDstPort()) + \
+        ' -n 800 200 ' + \
+        ' -Ft ' + idtsFileName + \
+        ' -T TCP' + '\n'
+    )
 
-            for time in timestamps:
-                dport = getDstPort()
-                s = '-z 1 -d ' + str((time - first_time) * 1000) + \
-                    ' -rp ' + str(dport)   + \
-                    ' -a '  + dIP + \
-                    ' -c 800 ' + \
-                    ' -T UDP' + '\n'
-                f.write(s)
-                written = True
     f.close()
-
-    if opened and not written:
-        os.remove(filename)
-
-def writeTCPFlowsToFile(write_key, IpMapDict = None):
-    filename = getSrcIPAddrFromKey(write_key, True, IpMapDict) + "_TCP.ditg"
-    written = False
-    opened = False
-
-    if os.path.isfile(filename):
-        f = open(filename, 'a')
-    else:
-        f = open(filename, 'w')
-        opened = True
-
-    global first_time
-
-    for key in TCPFlows.keys():
-        if getSrcIPAddrFromKey(key) == getSrcIPAddrFromKey(write_key):
-            # TODO : generate a file with IDTs instead
-            timestamps = sorted(TCPFlows[key])
-            sport = getSrcPortFromKey(key)
-            dIP   = getDstIPAddrFromKey(key, True, IpMapDict)
-
-            if dIP == '' or getSrcIPAddrFromKey(key, True, IpMapDict) == '':
-                continue
-
-            for time in timestamps:
-                dport = getDstPort()
-                s = '-z 1 -d ' + str((time - first_time) * 1000) + \
-                    ' -rp ' + str(dport)   + \
-                    ' -a '  + dIP + \
-                    ' -c 800' + \
-                    ' -T TCP' + '\n'
-                f.write(s)
-                written = True
-    f.close()
-
-    if opened and not written:
-        os.remove(filename)
 
 def readPartitions(mapper_file):
     Partitions = {}
@@ -222,7 +169,6 @@ def generateMapper(list_file, mapper_file):
     for p in Partitions.keys():
         endPoints = Partitions[p]
         for i in range(int(endPoints[0]), int(endPoints[1]) + 1):
-            print i
             ip = linecache.getline(list_file, i).strip().strip(',')
             IpMapDict[ip] = getIpForHost(p)
 
@@ -231,8 +177,7 @@ def generateMapper(list_file, mapper_file):
 
 def openAndReadPcap(filename, end_time):
     global first_time
-    TCPFlows = {}
-    UDPFlows = {}
+    Flows = {}
 
     f = open(filename)
     pcap = dpkt.pcap.Reader(f)
@@ -246,7 +191,8 @@ def openAndReadPcap(filename, end_time):
         if first == False and (ts - first_time) >= end_time:
             break
         else:
-            print (ts - first_time)
+            # print (ts - first_time)
+            pass
 
         try:
             eth = dpkt.ethernet.Ethernet(buf)
@@ -260,28 +206,37 @@ def openAndReadPcap(filename, end_time):
         ip=eth.data
         if ip.p == dpkt.ip.IP_PROTO_TCP: # Check for TCP packets
             TCP = ip.data
-            key = getKey(inet_to_str(ip.src), TCP.sport, inet_to_str(ip.dst), TCP.dport)
-            addToTCPFlow(TCPFlows, key, ts)
+            key = getKey(inet_to_str(ip.src), inet_to_str(ip.dst))
+
+            addToFlows(Flows, key, (ts - first_time))
         elif ip.p == dpkt.ip.IP_PROTO_UDP: # Check for UDP packets
-            UDP=ip.data
-            key = getKey(inet_to_str(ip.src), UDP.sport, inet_to_str(ip.dst), UDP.dport)
-            addToUDPFlow(UDPFlows, key, ts)
+            UDP = ip.data
+            key = getKey(inet_to_str(ip.src), inet_to_str(ip.dst))
+
+            addToFlows(Flows, key, (ts - first_time), 'UDP')
         else:
             # ignore other packets
             continue
         i += 1
+
     f.close()
     print "Total packets : " + str(i)
 
-    return TCPFlows, UDPFlows
+    return Flows
 
 first_time = 0
 end_time = 30
 
+os.system('rm *.ditg')
+os.system('rm *.idts')
+
 p = 12346
 
-# IpMapDict = generateMapper('list.csv', 'mapper.csv')
-
 IpMapDict = generateMapper('list.csv', 'mapper.csv')
-TCPFlows, UDPFlows = openAndReadPcap('test2.pcap', end_time)
-generateDITGFlowFiles(TCPFlows, UDPFlows, IpMapDict)
+# print len(IpMapDict)
+Flows = openAndReadPcap('test2.pcap', end_time)
+# print len(Flows)
+generateDITGFlowFiles(Flows, IpMapDict)
+
+# ipsProcessed = getAllDistinctIPs(Flows)
+# print ipsProcessed
