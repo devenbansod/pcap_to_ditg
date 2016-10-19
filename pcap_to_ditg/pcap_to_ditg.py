@@ -2,46 +2,13 @@
 
 import dpkt
 import datetime
-import socket
 import linecache
 import os
-import argparse
+import socket
+from util import util
 
 
-class Util:
-    """ Utils used in PcapToDITG """
-
-    @classmethod
-    def mac_addr(self, address):
-        """Convert a MAC address to a readable/printable string
-
-           Args:
-               address (str): a MAC address in hex form (e.g. '\x01\x02\x03\x04\x05\x06')
-           Returns:
-               str: Printable/readable MAC address
-        """
-        return ':'.join('%02x' % ord(b) for b in address)
-
-    @classmethod
-    def inet_to_str(self, inet):
-        """Convert inet object to a string
-
-            Args:
-                inet (inet struct): inet network address
-            Returns:
-                str: Printable/readable IP address
-        """
-        # First try ipv4 and then ipv6
-        try:
-            return socket.inet_ntop(socket.AF_INET, inet)
-        except ValueError:
-            return socket.inet_ntop(socket.AF_INET6, inet)
-
-
-
-
-
-class PcapToDITG(object):
+class pcap_to_ditg(object):
     """ Generate DITG script files from a pcap file """
 
     __IpMapDict = {}
@@ -49,8 +16,18 @@ class PcapToDITG(object):
     __p = 12346 #TODO later add for separate command-line option
     __p_end = 12752 #TODO later add for separate command-line option
 
-    def __init__(self, pcap_file, mapper_file, list_file, options):
-        super(PcapToDITG, self).__init__()
+    def __init__(self,
+        pcap_file,
+        mapper_file,
+        list_file,
+        options = {
+            'remove_old': False,
+            'same_dir' : False,
+            'start_time' : 0,
+            'end_time' : 30,
+        }
+    ):
+        super(pcap_to_ditg, self).__init__()
         self.pcap_file = pcap_file
         self.mapper_file = mapper_file
         self.list_file = list_file
@@ -63,7 +40,7 @@ class PcapToDITG(object):
         self.__generateMapper()
         self.__openAndReadPcap()
 
-    # Utility methods
+    # utility methods
     @classmethod
     def __getKey(self, src_ip, dst_ip):
         return src_ip + "_" + dst_ip
@@ -120,26 +97,6 @@ class PcapToDITG(object):
             return '10.0.10.1'
         elif host == 'h6':
             return '10.0.5.2'
-
-    def getAllDistinctIPs(self):
-        ipsProcessed = []
-        for key in self.__Flows.keys():
-            origSIP = PcapToDITG.__getSrcIPAddrFromKey(key)
-            if origSIP not in ipsProcessed:
-                ipsProcessed.append(origSIP)
-
-            origDIP = PcapToDITG.__getDstIPAddrFromKey(key)
-            if origDIP not in ipsProcessed:
-                ipsProcessed.append(origDIP)
-
-        return ipsProcessed
-
-    def generateDITGFlowFiles(self):
-        i = 0
-        for key in self.__Flows.keys():
-            i += 1
-            print i
-            self.__writeFlowToFile(key)
 
     def __writeFlowToFile(self, key):
         origSIP = self.__getSrcIPAddrFromKey(key)
@@ -202,7 +159,7 @@ class PcapToDITG(object):
             endPoints = Partitions[p]
             for i in range(int(endPoints[0]), int(endPoints[1]) + 1):
                 ip = linecache.getline(self.list_file, i).strip().strip(',')
-                (self.__IpMapDict)[ip] = PcapToDITG.__getIpForHost(p)
+                (self.__IpMapDict)[ip] = pcap_to_ditg.__getIpForHost(p)
 
     def __openAndReadPcap(self):
         f = open(self.pcap_file)
@@ -237,12 +194,12 @@ class PcapToDITG(object):
             ip=eth.data
             if ip.p == dpkt.ip.IP_PROTO_TCP: # Check for TCP packets
                 TCP = ip.data
-                key = PcapToDITG.__getKey(Util.inet_to_str(ip.src), Util.inet_to_str(ip.dst))
+                key = pcap_to_ditg.__getKey(util.inet_to_str(ip.src), util.inet_to_str(ip.dst))
 
                 self.__addToFlows(key, (ts - first_time))
             elif ip.p == dpkt.ip.IP_PROTO_UDP: # Check for UDP packets
                 UDP = ip.data
-                key = PcapToDITG.__getKey(Util.inet_to_str(ip.src), Util.inet_to_str(ip.dst))
+                key = pcap_to_ditg.__getKey(util.inet_to_str(ip.src), util.inet_to_str(ip.dst))
 
                 self.__addToFlows(key, (ts - first_time), 'UDP')
             else:
@@ -251,55 +208,24 @@ class PcapToDITG(object):
             i += 1
 
         f.close()
-        print "Total packets : " + str(i)
 
-if __name__ == "__main__":
+    # API 1
+    def getAllDistinctIPs(self):
+        ipsProcessed = []
+        for key in self.__Flows.keys():
+            origSIP = pcap_to_ditg.__getSrcIPAddrFromKey(key)
+            if origSIP not in ipsProcessed:
+                ipsProcessed.append(origSIP)
 
-    parser = argparse.ArgumentParser(description='Generate DITG script files from a pcap file')
+            origDIP = pcap_to_ditg.__getDstIPAddrFromKey(key)
+            if origDIP not in ipsProcessed:
+                ipsProcessed.append(origDIP)
 
-    # Compulsory args
-    parser.add_argument('pcap_file', help='.pcap file to be used in generation',
-                        type=str, action='store')
-    parser.add_argument('mapper_file', help='Mapper file to be used in generation',
-                        type=str, action='store')
-    parser.add_argument('list_file', help='File containing all distinct IPs to be used in generation',
-                        type=str, action='store')
+        return ipsProcessed
 
-    # Optional args
-    parser.add_argument('-t', '--start-time',  help='Timestamp (in sec) from which the file should be read',
-                        type=int, action='store', default=0)
-    parser.add_argument('-e', '--end-time',  help='Timestamp (in sec) until which the file should be read',
-                        type=int, action='store', default=30)
-    parser.add_argument('-r', '--remove-old', help='Remove any older generated files if present before generating new files',
-                        action='store_true', default=False)
-    parser.add_argument('-s', '--same-dir', help='File containing all distinct IPs to be used in generation',
-                        action='store_true', default=False)
-    parser.add_argument('-p', '--print-all-ips', help='Print all distinct IPs appearing in the pcap file and exit',
-                        action='store_true', default=False)
-    parser.add_argument('-c', '--clean', help='Remove any older generated files and exit the program',
-                        action='store_true', default=False)
-
-    args = parser.parse_args()
-    options = {
-        'remove_old': args.remove_old,
-        'same_dir' : args.same_dir,
-        'start_time' : int(args.start_time),
-        'end_time' : int(args.end_time),
-    }
-
-    pToD = PcapToDITG(
-        args.pcap_file, # Pcap file to read
-        args.mapper_file, # File with mapping of IPs to topology hosts
-        args.list_file, # File with list of IPs
-        options
-    )
-
-    if args.print_all_ips:
-        ips = pToD.getAllDistinctIPs()
-        print
-        print('The list of distinct IPs appearing in \'' + args.pcap_file + '\' are:')
-        for ip in ips:
-            print ip + ','
-
-    else:
-        pToD.generateDITGFlowFiles()
+    # API 2
+    def generateDITGFlowFiles(self):
+        i = 0
+        for key in self.__Flows.keys():
+            i += 1
+            self.__writeFlowToFile(key)
