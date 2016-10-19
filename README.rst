@@ -22,11 +22,11 @@ Installation
 Usage
 -----
 
--  The help section of the program describes the usage details
+-  The help section of the `run.py` program describes the usage details
 
    ::
 
-       usage: pcap_to_ditg.py [-h] [-t START_TIME] [-e END_TIME] [-r] [-s] [-p] [-c]
+       usage: run.py [-h] [-t START_TIME] [-e END_TIME] [-r] [-s] [-p] [-c]
                           pcap_file mapper_file list_file
 
        Generate DITG script files from a pcap file
@@ -86,4 +86,21 @@ Usage
        .
        .
 
+-  Usage in a different script or in interpreter mode is as:
+
+   ::
+
+       >> from pcap_to_ditg import pcap_to_ditg
+       >> pcap_file_path = '***'
+       >> mapper_file_path = '***'
+       >> list_file_path = '***'
+       >> options = {'remove_old' : True}
+       >> p = pcap_to_ditg.pcap_to_ditg(
+            pcap_file_path,
+            mapper_file_path,
+            list_file_path,
+            options
+          )
+       The flow scripts and the IDT files have been generated and have been saved in separate sub-folders *_ditg_files.
+       >>
 
