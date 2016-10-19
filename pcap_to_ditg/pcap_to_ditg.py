@@ -253,12 +253,6 @@ class PcapToDITG(object):
         f.close()
         print "Total packets : " + str(i)
 
-# first_time = 0
-# end_time = 30
-
-# p = 12346
-
-
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Generate DITG script files from a pcap file')
@@ -305,14 +299,7 @@ if __name__ == "__main__":
         print
         print('The list of distinct IPs appearing in \'' + args.pcap_file + '\' are:')
         for ip in ips:
-            print ip
+            print ip + ','
 
     else:
         pToD.generateDITGFlowFiles()
-
-# __IpMapDict = generateMapper('list.csv', 'mapper.csv')
-# Flows = openAndReadPcap('test2.pcap', end_time)
-# generateDITGFlowFiles(Flows, __IpMapDict)
-
-# ipsProcessed = getAllDistinctIPs(Flows)
-# print ipsProcessed
