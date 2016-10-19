@@ -116,21 +116,22 @@ def writeFlowToFile(key, Flows, IpMapDict = None):
     newDIP  = getDstIPAddrFromKey(key, True, IpMapDict)
 
     if newDIP == '' or newSIP == '':
-        print "R"
         return
+    if not os.path.exists(newSIP + '_ditg_files'):
+        os.makedirs(newSIP + '_ditg_files')
 
-    scriptFileName = newSIP + '.ditg'
+    scriptFileName = newSIP + '_ditg_files/' + newSIP + '.ditg'
     if os.path.exists(scriptFileName):
         f = open(scriptFileName, 'a')
     else:
         f = open(scriptFileName, 'w')
 
-    idtsFileName = origSIP + '_' + origDIP + '.idts'
+    idtsFileName = newSIP + '_ditg_files/' + origSIP + '_' + origDIP + '.idts'
     idtsFile = open(idtsFileName, 'w')
 
     idts = Flows[key]
     for idt in idts:
-        idtsFile.write(str(idt))
+        idtsFile.write(str(idt) + '\n')
     idtsFile.close()
 
     f.write(
@@ -227,15 +228,12 @@ def openAndReadPcap(filename, end_time):
 first_time = 0
 end_time = 30
 
-os.system('rm *.ditg')
-os.system('rm *.idts')
+os.system('rm -r *_ditg_files')
 
 p = 12346
 
 IpMapDict = generateMapper('list.csv', 'mapper.csv')
-# print len(IpMapDict)
 Flows = openAndReadPcap('test2.pcap', end_time)
-# print len(Flows)
 generateDITGFlowFiles(Flows, IpMapDict)
 
 # ipsProcessed = getAllDistinctIPs(Flows)
