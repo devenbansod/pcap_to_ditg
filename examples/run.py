@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import os
 from pcap_to_ditg import pcap_to_ditg
 
 def getArgParser():
@@ -19,12 +20,11 @@ def getArgParser():
                         type=int, action='store', default=0)
     parser.add_argument('-e', '--end-time',  help='Timestamp (in sec) until which the file should be read',
                         type=int, action='store', default=30)
-    parser.add_argument('-r', '--remove-old',
-                        help='Remove any older generated files if present before generating new files',
-                        action='store_true', default=False)
-    parser.add_argument('-s', '--same-dir',
-                        help='File containing all distinct IPs to be used in generation',
-                        action='store_true', default=False)
+    parser.add_argument('-s', '--packet-size-options',
+                        help='Packet size options to be used for each flow (for ex. For Anonymized trace pcap files).'
+                        + '\nIf not provided, *_ps files are created for each flow by using packet '
+                        +'sizes as per the pcap file',
+                        action='store')
     parser.add_argument('-p', '--print-all-ips',
                         help='Print all distinct IPs appearing in the pcap file and exit',
                         action='store_true', default=False)
@@ -39,10 +39,9 @@ if __name__ == "__main__":
     parser = getArgParser()
     args = parser.parse_args()
     options = {
-        'remove_old': args.remove_old,
-        'same_dir' : args.same_dir,
         'start_time' : int(args.start_time),
         'end_time' : int(args.end_time),
+        'ps_opts': args.packet_size_options,
     }
 
     pToD = pcap_to_ditg(
@@ -55,12 +54,14 @@ if __name__ == "__main__":
     if args.print_all_ips:
         ips = pToD.getAllDistinctIPs()
         print
-        print('The list of distinct IPs appearing in \'' + args.pcap_file + '\' are:')
+        print('\nThe list of distinct IPs appearing in \'' + args.pcap_file + '\' are:')
         for ip in ips:
             print ip + ','
-
+    elif args.clean:
+        os.system('rm -rf *_ditg_files')
+        print('\nThe generated files and folders have been cleaned.')
     else:
         pToD.generateDITGFlowFiles()
 
-        print '\nThe flow scripts and the IDT files have been generated' + \
-            ' and have been saved in separate sub-folders *_ditg_files.'
+        print('\nThe flow scripts and the IDT files have been generated' + \
+            ' and have been saved in separate sub-folders *_ditg_files.')

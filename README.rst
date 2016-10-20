@@ -26,30 +26,32 @@ Usage
 
    ::
 
-       usage: run.py [-h] [-t START_TIME] [-e END_TIME] [-r] [-s] [-p] [-c]
-                          pcap_file mapper_file list_file
+        usage: run.py [-h] [-t START_TIME] [-e END_TIME] [-s PACKET_SIZE_OPTIONS] [-p]
+              [-c]
+              pcap_file mapper_file list_file
 
-       Generate DITG script files from a pcap file
+        Generate DITG script files from a pcap file
 
-       positional arguments:
-         pcap_file             .pcap file to be used in generation
-         mapper_file           Mapper file to be used in generation
-         list_file             File containing all distinct IPs to be used in
-                               generation
+        positional arguments:
+          pcap_file             .pcap file to be used in generation
+          mapper_file           Mapper file to be used in generation
+          list_file             File containing all distinct IPs to be used in
+                                generation
 
-       optional arguments:
-         -h, --help            show this help message and exit
-         -t START_TIME, --start-time START_TIME
-                               Timestamp (in sec) from which the file should be read
-         -e END_TIME, --end-time END_TIME
-                               Timestamp (in sec) until which the file should be read
-         -r, --remove-old      Remove any older generated files if present before
-                               generating new files
-         -s, --same-dir        File containing all distinct IPs to be used in
-                               generation
-         -p, --print-all-ips   Print all distinct IPs appearing in the pcap file and
-                               exit
-         -c, --clean           Remove any older generated files and exit the program
+        optional arguments:
+          -h, --help            show this help message and exit
+          -t START_TIME, --start-time START_TIME
+                                Timestamp (in sec) from which the file should be read
+          -e END_TIME, --end-time END_TIME
+                                Timestamp (in sec) until which the file should be read
+          -s PACKET_SIZE_OPTIONS, --packet-size-options PACKET_SIZE_OPTIONS
+                                Packet size options to be used for each flow (for ex.
+                                For Anonymized trace pcap files). If not provided,
+                                *_ps files are created for each flow by using packet
+                                sizes as per the pcap file
+          -p, --print-all-ips   Print all distinct IPs appearing in the pcap file and
+                                exit
+          -c, --clean           Remove any older generated files and exit the program
 
 -  The format of ``list_file`` is as follows:
 
@@ -63,13 +65,13 @@ Usage
 
    -  These are the IPs that are appearing in the PCAP file (as
       specified by ``pcap_file`` argument)
-   -  You can generate this list automatically by running the program
+   -  You can generate this list automatically by running the example program
       with ``-p`` option
 
       ::
 
           $ touch list_file
-          $ python pcap_to_ditg.py -p pcap_file mapper_file list_file > list_file
+          $ python run.py -p pcap_file mapper_file list_file > list_file
 
    -  **Note**: While running the program with ``-p`` option, the files
       ``mapper_file`` and ``list_file`` are not actually used but still
@@ -94,7 +96,7 @@ Usage
        >> pcap_file_path = '***'
        >> mapper_file_path = '***'
        >> list_file_path = '***'
-       >> options = {'remove_old' : True}
+       >> options = {'end_time' : 60}
        >> p = pcap_to_ditg.pcap_to_ditg(
             pcap_file_path,
             mapper_file_path,
