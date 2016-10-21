@@ -40,8 +40,7 @@ class pcap_to_ditg(object):
             'start_time' : 0,
             'end_time' : 30,
             'ps_opts': '',
-            'port_start': 0,
-            'port_end': 0,
+            'orig_ports': False,
         }
     ):
         super(pcap_to_ditg, self).__init__()
@@ -56,13 +55,11 @@ class pcap_to_ditg(object):
             self.options['end_time'] = 30
         if 'ps_opts' not in options.keys() or options['ps_opts'] == None:
             self.options['ps_opts'] = ''
-        if 'port_start' not in options.keys():
-            self.options['port_start'] = 12346
-        if 'port_end' not in options.keys():
-            self.options['port_end'] = 12752
+        if 'orig_ports' not in options.keys():
+            self.options['orig_ports'] = False
 
-        self.__p = self.options['port_start']
-        self.__p_end = self.options['port_end']
+        self.__p = 12346
+        self.__p_end = 12752
 
         # Generate Map in IpMapDict
         self.__generateMapper()
@@ -77,8 +74,8 @@ class pcap_to_ditg(object):
 
     # Generates an un-reserved Port number
     def __getDstPort(self):
-        if self.__p == self.options['port_end']:
-            self.__p = self.options['port_start']
+        if self.__p == self.__p_end:
+            self.__p = 12246
         else:
             self.__p += 1
 
@@ -159,10 +156,12 @@ class pcap_to_ditg(object):
         flow_str = '-z ' + str(len(idts)) + \
             ' -a ' + newDIP
 
-        if self.options['port_start'] == 0 :
+        if self.options['orig_ports'] == True :
             port_opts = ' -rp ' + self.__Flows[key][3]
         else:
             port_opts = ' -rp ' + str(self.__getDstPort())
+
+        flow_str += ' ' + port_opts + ' '
 
         psStr = ''
         if self.options['ps_opts'] == '':

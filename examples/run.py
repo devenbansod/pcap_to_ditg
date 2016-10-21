@@ -31,6 +31,10 @@ def getArgParser():
     parser.add_argument('-c', '--clean',
                         help='Remove any older generated files and exit the program',
                         action='store_true', default=False)
+    parser.add_argument('-op', '--orig-ports',
+                        help='Whether original destination ports should be used ' + \
+                            'or a non-clashing port should be assigned',
+                        action='store_true', default=False)
 
     return parser
 
@@ -42,6 +46,7 @@ if __name__ == "__main__":
         'start_time' : int(args.start_time),
         'end_time' : int(args.end_time),
         'ps_opts': args.packet_size_options,
+        'orig_ports': args.orig_ports,
     }
 
     pToD = pcap_to_ditg(
