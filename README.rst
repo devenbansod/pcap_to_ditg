@@ -27,7 +27,7 @@ Usage
    ::
 
         usage: run.py [-h] [-t START_TIME] [-e END_TIME] [-s PACKET_SIZE_OPTIONS] [-p]
-              [-c]
+              [-c] [-op]
               pcap_file mapper_file list_file
 
         Generate DITG script files from a pcap file
@@ -52,6 +52,9 @@ Usage
           -p, --print-all-ips   Print all distinct IPs appearing in the pcap file and
                                 exit
           -c, --clean           Remove any older generated files and exit the program
+          -op, --orig-ports     Whether original destination ports should be used or a
+                                non-clashing port should be assigned
+
 
 -  The format of ``list_file`` is as follows:
 
