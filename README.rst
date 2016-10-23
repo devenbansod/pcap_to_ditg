@@ -22,7 +22,7 @@ Installation
 Usage
 -----
 
--  The help section of the `run.py` program describes the usage details
+-  The help section of the `run.py <https://github.com/devenbansod/pcap_to_ditg/blob/master/examples/run.py>`__ program describes the usage details
 
    ::
 
