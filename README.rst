@@ -1,7 +1,8 @@
 pcap_to_ditg
 ============
 
-Generates [DITG's](http://traffic.comics.unina.it/software/ITG/) flow
+Generates `DITG 
+<http://traffic.comics.unina.it/software/ITG/>`_ flow
 definition Files for each IP using a Packet Capture (.pcap) file as
 input
 
