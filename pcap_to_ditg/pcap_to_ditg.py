@@ -41,8 +41,8 @@ class pcap_to_ditg(object):
             'end_time' : 30,
             'ps_opts': '',
             'orig_ports': False,
-        }
-    ):
+            }
+        ):
         super(pcap_to_ditg, self).__init__()
         self.pcap_file = pcap_file
         self.mapper_file = mapper_file
@@ -112,21 +112,6 @@ class pcap_to_ditg(object):
         l[2] = L4type
         l[3] = rp
         self.__Flows[key] = l
-
-    @classmethod
-    def __getIpForHost(self, host):
-        if host == 'h1':
-            return '10.0.1.10'
-        elif host == 'h2':
-            return '10.0.1.20'
-        elif host == 'h3':
-            return '10.0.2.10'
-        elif host == 'h4':
-            return '10.0.2.20'
-        elif host == 'h5':
-            return '10.0.10.1'
-        elif host == 'h6':
-            return '10.0.5.2'
 
     def __writeFlowToFile(self, key):
         origSIP = self.__getSrcIPAddrFromKey(key)
@@ -198,6 +183,7 @@ class pcap_to_ditg(object):
                         endPoints = []
                         endPoints.append(line.split(',')[1]) # start
                         endPoints.append(line.split(',')[2]) # end
+                        endPoints.append(line.split(',')[4][:-1]) # ip
                         Partitions[host] = endPoints
             return Partitions
         except Exception, e:
@@ -213,7 +199,7 @@ class pcap_to_ditg(object):
             if os.path.exists(self.list_file):
                 for i in range(int(endPoints[0]), int(endPoints[1]) + 1):
                     ip = linecache.getline(self.list_file, i).strip().strip(',')
-                    (self.__IpMapDict)[ip] = pcap_to_ditg.__getIpForHost(p)
+                    (self.__IpMapDict)[ip] = endPoints[2]
             else:
                 print('*** The file \'' + self.list_file + '\' could not be read\n')
                 raise IOError('The file \'' + self.list_file + '\' could not be read\n')

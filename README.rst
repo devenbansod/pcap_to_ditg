@@ -85,9 +85,9 @@ Usage
 
    ::
 
-       Host,Start_row,End_row,Number
-       h1,1734,1902,169
-       h2,1528,1733,206
+       Host,Start_row,End_row,Number,IP
+       h1,1734,1902,169,10.0.0.1
+       h2,1528,1733,206,10.0.0.2
        .
        .
        .

@@ -49,7 +49,7 @@ if __name__ == "__main__":
         'orig_ports': args.orig_ports,
     }
 
-    pToD = pcap_to_ditg(
+    pToD = pcap_to_ditg.pcap_to_ditg(
         args.pcap_file, # Pcap file to read
         args.mapper_file, # File with mapping of IPs to topology hosts
         args.list_file, # File with list of IPs
