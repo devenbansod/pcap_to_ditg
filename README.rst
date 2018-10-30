@@ -18,7 +18,7 @@ Installation
        $ sudo pip install pcap_to_ditg
 
 -  The latest release can be also downloaded from the `Github
-   repository <https://github.com/devenbansod/pcapToDITG/releases>`__
+   repository <https://github.com/devenbansod/pcap_to_DITG/releases>`__
 
 Usage
 -----
