@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(name='pcap_to_ditg',
-      version='1.0.0',
+      version='1.0.1',
       description='Generate DITG script files from a pcap file',
       url='http://github.com/devenbansod/pcap_to_DITG',
       author='Deven Bansod',
