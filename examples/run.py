@@ -49,14 +49,13 @@ if __name__ == "__main__":
         'orig_ports': args.orig_ports,
     }
 
-    pToD = pcap_to_ditg.pcap_to_ditg(
-        args.pcap_file, # Pcap file to read
-        args.mapper_file, # File with mapping of IPs to topology hosts
-        args.list_file, # File with list of IPs
-        options
-    )
-
     if args.print_all_ips:
+        pToD = pcap_to_ditg.pcap_to_ditg(
+            args.pcap_file, # Pcap file to read
+            args.mapper_file, # File with mapping of IPs to topology hosts
+            args.list_file, # File with list of IPs
+            options
+        )
         ips = pToD.getAllDistinctIPs()
         print
         print('\nThe list of distinct IPs appearing in \'' + args.pcap_file + '\' are:')
@@ -66,6 +65,12 @@ if __name__ == "__main__":
         os.system('rm -rf *_ditg_files')
         print('\nThe generated files and folders have been cleaned.')
     else:
+        pToD = pcap_to_ditg.pcap_to_ditg(
+            args.pcap_file, # Pcap file to read
+            args.mapper_file, # File with mapping of IPs to topology hosts
+            args.list_file, # File with list of IPs
+            options
+        )
         pToD.generateDITGFlowFiles()
 
         print('\nThe flow scripts and the IDT files have been generated' + \

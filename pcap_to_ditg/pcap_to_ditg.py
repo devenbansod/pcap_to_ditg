@@ -183,7 +183,7 @@ class pcap_to_ditg(object):
                         endPoints = []
                         endPoints.append(line.split(',')[1]) # start
                         endPoints.append(line.split(',')[2]) # end
-                        endPoints.append(line.split(',')[4][:-1]) # ip
+                        endPoints.append(line.split(',')[4].strip()) # ip
                         Partitions[host] = endPoints
             return Partitions
         except Exception, e:
